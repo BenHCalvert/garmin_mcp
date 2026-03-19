@@ -2,6 +2,8 @@
 
 Exposes your Garmin Connect data — activities, health metrics, training readiness, and more — as MCP tools for use with Claude and other MCP clients.
 
+YEEEHAW!!!
+
 ## Setup
 
 ### 1. Install dependencies
