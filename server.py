@@ -4,8 +4,8 @@
 import json
 import logging
 import os
-import pickle
-from datetime import date, datetime, timedelta
+import sys
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
@@ -36,8 +36,15 @@ mcp = FastMCP(
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────
 
+_client: Garmin | None = None
+
+
 def _get_client() -> Garmin:
     """Return an authenticated Garmin client, reusing saved tokens when possible."""
+    global _client
+    if _client is not None:
+        return _client
+
     email = os.environ.get("GARMIN_EMAIL")
     password = os.environ.get("GARMIN_PASSWORD")
 
@@ -48,25 +55,30 @@ def _get_client() -> Garmin:
         )
 
     client = Garmin(email, password, is_cn=False, prompt_mfa=_prompt_mfa)
+    token_dir = TOKEN_STORE / email
 
-    token_file = TOKEN_STORE / f"{email}.pkl"
-    TOKEN_STORE.mkdir(parents=True, exist_ok=True)
-
-    if token_file.exists():
+    if (token_dir / "garmin_tokens.json").exists():
         try:
-            client.login(str(token_file))
+            client.login(str(token_dir))
+            _client = client
             return client
         except Exception:
-            logger.info("Saved tokens invalid, re-authenticating…")
-            token_file.unlink(missing_ok=True)
+            logger.info("Saved tokens invalid, falling back to credential login…")
 
     client.login()
-    client.garth.dump(str(token_file))
+    token_dir.mkdir(parents=True, exist_ok=True)
+    client.client.dump(str(token_dir))
+    _client = client
     return client
 
 
 def _prompt_mfa() -> str:
     """Called by garminconnect when MFA is required."""
+    if not sys.stdin.isatty():
+        raise RuntimeError(
+            "Garmin MFA required but server is non-interactive. Run `python server.py` "
+            "in a terminal once to refresh tokens, then copy them to this host."
+        )
     return input("Enter Garmin MFA/OTP code: ")
 
 
