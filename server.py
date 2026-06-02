@@ -631,9 +631,4 @@ async def garmin_get_user_profile() -> str:
 
 if __name__ == "__main__":
     transport = os.getenv("MCP_TRANSPORT", "stdio")
-    if transport == "sse":
-        host = os.getenv("MCP_HOST", "127.0.0.1")
-        port = int(os.getenv("MCP_PORT", "8765"))
-        mcp.run(transport="sse", host=host, port=port)
-    else:
-        mcp.run(transport="stdio")
+    mcp.run(transport=transport)
