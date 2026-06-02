@@ -28,7 +28,11 @@ TOKEN_STORE = Path(os.getenv("GARMIN_TOKEN_STORE", Path.home() / ".garmin_tokens
 TODAY = date.today().isoformat()
 
 # ── MCP Server ────────────────────────────────────────────────────────────────
-mcp = FastMCP("garmin_mcp")
+mcp = FastMCP(
+    "garmin_mcp",
+    host=os.getenv("MCP_HOST", "127.0.0.1"),
+    port=int(os.getenv("MCP_PORT", "8000")),
+)
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────
 
