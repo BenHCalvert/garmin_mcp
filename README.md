@@ -66,7 +66,7 @@ Add to your `claude_desktop_config.json` (macOS: `~/Library/Application Support/
 | `garmin_get_stats` | Daily summary: steps, calories, active minutes, stress |
 | `garmin_get_sleep` | Sleep stages, duration, sleep score |
 | `garmin_get_body_battery` | Body Battery levels over a date range |
-| `garmin_get_hrv` | Heart Rate Variability — key recovery metric |
+| `garmin_get_hrv` | Nightly HRV per day over `start_date`–`end_date`: last-night avg, 7-day avg, baseline range, status (or `date` for one night) |
 | `garmin_get_heart_rate` | Resting HR and intraday readings |
 | `garmin_get_stress` | Stress levels throughout the day |
 | `garmin_get_spo2` | Blood oxygen (SpO2) — useful post-altitude |
@@ -93,11 +93,60 @@ Add to your `claude_desktop_config.json` (macOS: `~/Library/Application Support/
 | `garmin_get_steps` | Daily step counts over a range |
 | `garmin_get_weekly_steps` | Weekly step summary |
 
+### Workouts
+| Tool | Description |
+|------|-------------|
+| `garmin_create_workout` | Build a structured run / bike / strength / backcountry ski workout from steps, upload it, and optionally schedule it (`dry_run` previews the payload without uploading) |
+| `garmin_schedule_workout` | Put an existing workout on a calendar date so it syncs to your watch |
+| `garmin_list_scheduled_workouts` | Workouts on your Garmin calendar in a date range (default: next 30 days) |
+| `garmin_list_workouts` | Workouts saved in your Garmin Connect library |
+| `garmin_unschedule_workout` | Remove a calendar entry, keeping the workout in the library |
+| `garmin_delete_workout` | Permanently delete a workout by ID |
+
 ### Account & Devices
 | Tool | Description |
 |------|-------------|
 | `garmin_get_user_profile` | Account profile info |
 | `garmin_get_devices` | Connected Garmin devices |
+
+## Workout Steps
+
+Each step has a `type` (`warmup`, `interval`, `recovery`, `rest`, `cooldown`, `repeat`), an optional end condition (`duration_seconds`, `distance_meters`, or `reps` for strength; none means "press lap"), and at most one target:
+
+- Heart rate: `hr_zone` (1–5) or `hr_low_bpm` + `hr_high_bpm`
+- Pace (run only): `pace_slow` + `pace_fast` as `"M:SS"`, with `pace_unit` `km` or `mi`
+- Power (run/bike): `power_zone` (1–7) or `power_low_watts` + `power_high_watts`
+
+Strength steps also take `exercise_category` / `exercise_name` (Garmin exercise keys, e.g. `SQUAT` / `BARBELL_BACK_SQUAT`) and `weight_kg`. A `repeat` step wraps child `steps` with `iterations` (no nested repeats).
+
+Example: 5 × 3 min in zone 4
+
+```json
+{
+  "name": "5x3 Z4",
+  "sport": "run",
+  "schedule_date": "2026-12-01",
+  "steps": [
+    {"type": "warmup", "duration_seconds": 600, "hr_zone": 2},
+    {"type": "repeat", "iterations": 5, "steps": [
+      {"type": "interval", "duration_seconds": 180, "hr_zone": 4},
+      {"type": "recovery", "duration_seconds": 120, "hr_zone": 1}
+    ]},
+    {"type": "cooldown", "duration_seconds": 600}
+  ]
+}
+```
+
+**Backcountry ski:** Garmin's workout builder has no ski sport type, so these upload as sport "Other". On the watch, start the Backcountry Ski activity and load the workout from its Training menu.
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+All Garmin calls are mocked; the tests never touch a real account.
 
 ## Activity Type Filter Examples
 
