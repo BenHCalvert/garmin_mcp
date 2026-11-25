@@ -1,0 +1,36 @@
+# On the server:  cd anylist-mcp/deploy/hetzner && cp ../../.env.example .env && edit .env && docker compose up -d --build
+services:
+  anylist-mcp:
+    build: ../..
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MCP_TRANSPORT: http
+      TRUST_PROXY: "1"
+      OAUTH_STATE_FILE: /data/oauth-state.json
+      ANYLIST_CREDENTIALS_FILE: /data/anylist-credentials
+    volumes:
+      - anylist_data:/data
+    # Not published to the host; only Caddy can reach it.
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env, e.g. anylist.example.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - anylist-mcp
+
+volumes:
+  anylist_data:
+  caddy_data:
+  caddy_config:

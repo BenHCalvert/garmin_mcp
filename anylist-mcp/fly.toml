@@ -1,0 +1,30 @@
+# fly launch --no-deploy --copy-config  (then edit `app` and PUBLIC_URL)
+app = "anylist-mcp-CHANGEME"
+primary_region = "sea"
+
+[build]
+
+[env]
+  PUBLIC_URL = "https://anylist-mcp-CHANGEME.fly.dev"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/healthz"
+    timeout = "5s"
+
+[[mounts]]
+  source = "anylist_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
